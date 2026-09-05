@@ -1,0 +1,6 @@
+{
+  "name": "Customer Sentiment Dashboard",
+  "description": "Analyze batches of customer reviews with interactive sentiment trend charts over time, dynamic word clouds of complaints and praises, AI-written executive summary of top actionable areas, and deep Gemini multi-turn chatbot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
