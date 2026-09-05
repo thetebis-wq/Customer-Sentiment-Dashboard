@@ -62,9 +62,9 @@ async function callGeminiWithResilience(params: {
   }
 
   // Model fallback candidate chain: prioritize high-capacity fast models
-  const requested = params.preferredModel || 'gemini-3.5-flash';
+  const requested = params.preferredModel || 'gemini-3.6-flash';
   const candidateModels: string[] = [requested];
-  const standardFallbacks = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+  const standardFallbacks = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
   for (const m of standardFallbacks) {
     if (!candidateModels.includes(m)) {
       candidateModels.push(m);
@@ -143,7 +143,7 @@ app.post('/api/analyze-sentiment', async (req: Request, res: Response): Promise<
     }
 
     // Determine target model
-    let targetModel = 'gemini-3.5-flash';
+    let targetModel = 'gemini-3.6-flash';
     if (modelChoice === 'gemini-3.1-pro-preview' || enableThinking) {
       targetModel = 'gemini-3.1-pro-preview';
     } else if (modelChoice === 'gemini-3.1-flash-lite') {
@@ -333,7 +333,7 @@ app.post('/api/chat', async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       messages,
-      modelChoice = 'gemini-3.5-flash',
+      modelChoice = 'gemini-3.6-flash',
       enableThinking = false,
       dashboardContext,
     } = req.body;
