@@ -1,7 +1,7 @@
 # AGENTS.md — Engineering Standards & Governance (Customer Sentiment Dashboard)
 
 > **Repositorio:** Customer Sentiment & Competitor PMF Teardown Engine  
-> **Ubicación Canónica:** `C:\Proyectos\customer-sentiment-dashboard`  
+> **Ubicación Canónica:** `C:\Proyectos\customer-sentiment`  
 > **Framework Madre:** Marketing Strategy AI Solutions (`C:\Proyectos\Marketing Strategy AI Solutions`)  
 > **Arquitectura:** Repositorio Satélite Desacoplado ([ADR-007](file:///C:/Proyectos/Marketing%20Strategy%20AI%20Solutions/Main%20Strategy%20Optimization%20Framework/decisions/ADR-007-decoupled-multi-repo-architecture.md))  
 > **Prevalecencia:** Tier 0 (Máxima autoridad de gobernanza técnica y procedimental).
@@ -57,7 +57,7 @@ npm run build
 ## 📂 3. ESTRUCTURA DEL PROYECTO
 
 ```
-C:\Proyectos\customer-sentiment-dashboard\
+C:\Proyectos\customer-sentiment\
 ├── AGENTS.md                  # Este documento de gobernanza
 ├── CONSTRAINTS.md             # Umbrales numéricos de calidad
 ├── README.md                  # Manual del proyecto y guía de inicio rápido

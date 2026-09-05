@@ -1,7 +1,7 @@
 # 📊 Customer Sentiment & Competitor PMF Teardown Engine
 
 > **Motor de Autopsia de Sentimiento y Product-Market Fit para Consultores y Emprendedores**  
-> **Ubicación Canónica del Proyecto:** `C:\Proyectos\customer-sentiment-dashboard`  
+> **Ubicación Canónica del Proyecto:** `C:\Proyectos\customer-sentiment`  
 > **Framework Madre:** Marketing Strategy AI Solutions (`C:\Proyectos\Marketing Strategy AI Solutions`)  
 > **Arquitectura:** Repositorio Satélite Desacoplado ([ADR-007](file:///C:/Proyectos/Marketing%20Strategy%20AI%20Solutions/Main%20Strategy%20Optimization%20Framework/decisions/ADR-007-decoupled-multi-repo-architecture.md))  
 > **Gobernanza:** Tier 0 ([AGENTS.md](AGENTS.md) & [CONSTRAINTS.md](CONSTRAINTS.md))
@@ -66,7 +66,7 @@ Para habilitar el análisis cognitivo con modelos Gemini, necesitas una clave gr
 2. Haz clic en el botón azul **"Create API key"** (o *"Obtener clave de API"*).
 3. Selecciona tu proyecto de Google Cloud o crea uno nuevo de cortesía.
 4. Copia la clave generada (`AIzaSy...`).
-5. En la raíz de este proyecto (`C:\Proyectos\customer-sentiment-dashboard`), crea un archivo llamado `.env` copiando la plantilla `.env.example`:
+5. En la raíz de este proyecto (`C:\Proyectos\customer-sentiment`), crea un archivo llamado `.env` copiando la plantilla `.env.example`:
    ```bash
    cp .env.example .env
    ```
@@ -84,7 +84,7 @@ Para habilitar el análisis cognitivo con modelos Gemini, necesitas una clave gr
 
 ### 1. Instalación de Dependencias
 ```bash
-# Desde la carpeta C:\Proyectos\customer-sentiment-dashboard
+# Desde la carpeta C:\Proyectos\customer-sentiment
 npm install
 ```
 
@@ -118,7 +118,7 @@ npm start
 ## 📁 Estructura del Repositorio
 
 ```
-C:\Proyectos\customer-sentiment-dashboard\
+C:\Proyectos\customer-sentiment\
 ├── AGENTS.md                          # Reglas de disciplina técnica para agentes IA
 ├── CONSTRAINTS.md                     # Umbrales numéricos de calidad
 ├── README.md                          # Este manual

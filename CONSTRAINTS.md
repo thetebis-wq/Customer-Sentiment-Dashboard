@@ -1,7 +1,7 @@
 # CONSTRAINTS.md — Quality Gates & Technical Thresholds
 
 > **Proyecto:** Customer Sentiment & Competitor PMF Teardown Engine  
-> **Ubicación Canónica:** `C:\Proyectos\customer-sentiment-dashboard`  
+> **Ubicación Canónica:** `C:\Proyectos\customer-sentiment`  
 > **Framework Madre:** Marketing Strategy AI Solutions  
 > **Prevalecencia:** Tier 0 (Contrato Vinculante de Calidad e Inmutabilidad Técnica)
 
