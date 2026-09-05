@@ -8,6 +8,7 @@ import {
   MessageSquare,
   RefreshCw,
   SlidersHorizontal,
+  Printer,
 } from 'lucide-react';
 import { GeminiModelChoice } from '../types';
 
@@ -16,6 +17,7 @@ interface HeaderProps {
   onToggleChat: () => void;
   isChatOpen: boolean;
   onExport: () => void;
+  onPrintPdf: () => void;
   onReset: () => void;
   hasData: boolean;
   modelChoice: GeminiModelChoice;
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleChat,
   isChatOpen,
   onExport,
+  onPrintPdf,
   onReset,
   hasData,
   modelChoice,
@@ -39,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   isAnalyzing,
 }) => {
   return (
-    <header className="sticky top-0 z-30 bg-[#05070A]/90 backdrop-blur-md border-b border-white/10">
+    <header className="sticky top-0 z-30 bg-[#05070A]/90 backdrop-blur-md border-b border-white/10 print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-2">
           {/* Logo & App Title matching Immersive UI */}
@@ -50,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xs uppercase tracking-[0.3em] text-cyan-400 font-bold">
-                  Neural Analysis Engine v2.4
+                  Neural Intelligence Engine v2.5
                 </h1>
                 <div className="hidden sm:flex items-center gap-1.5 ml-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_#00E5FF] animate-pulse"></span>
@@ -58,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
               <h2 className="text-lg sm:text-xl font-light tracking-tight text-white">
-                Customer Sentiment Intelligence
+                Customer Sentiment & PMF Teardown
               </h2>
             </div>
           </div>
@@ -70,8 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
               id="header-thinking-toggle"
               type="button"
               onClick={onToggleThinking}
-              title="Toggle Gemini High Thinking Mode (Reasoning on gemini-3.1-pro-preview)"
-              className={`hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
+              title="Toggle Gemini High Thinking Mode"
+              className={`hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 min-h-[44px] rounded-xl text-xs font-medium transition-all active:scale-[0.97] ${
                 enableThinking
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.3)] font-semibold'
                   : 'bg-white/[0.04] text-white/60 hover:text-white border border-white/10 hover:border-white/20'
@@ -91,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectModel('gemini-3.1-flash-lite')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 min-h-[40px] rounded-lg transition-colors active:scale-[0.97] ${
                   modelChoice === 'gemini-3.1-flash-lite' && !enableThinking
                     ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30'
                     : 'text-white/60 hover:text-white'
@@ -102,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectModel('gemini-3.5-flash')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 min-h-[40px] rounded-lg transition-colors active:scale-[0.97] ${
                   modelChoice === 'gemini-3.5-flash' && !enableThinking
                     ? 'bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30'
                     : 'text-white/60 hover:text-white'
@@ -113,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectModel('gemini-3.1-pro-preview')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 min-h-[40px] rounded-lg transition-colors active:scale-[0.97] ${
                   modelChoice === 'gemini-3.1-pro-preview' || enableThinking
                     ? 'bg-cyan-500 text-black font-semibold shadow-[0_0_12px_rgba(0,229,255,0.4)]'
                     : 'text-white/60 hover:text-white'
@@ -128,11 +131,11 @@ export const Header: React.FC<HeaderProps> = ({
               id="header-ingest-button"
               type="button"
               onClick={onOpenInput}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer"
+              className="flex items-center space-x-1.5 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-semibold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer active:scale-[0.97]"
             >
               <UploadCloud className="w-4 h-4" />
-              <span className="hidden sm:inline">Paste Reviews</span>
-              <span className="sm:hidden">Ingest</span>
+              <span className="hidden sm:inline">Cargar Reseñas</span>
+              <span className="sm:hidden">Ingesta</span>
             </button>
 
             {/* Chat Assistant Drawer Toggle */}
@@ -140,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
               id="header-chat-toggle"
               type="button"
               onClick={onToggleChat}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              className={`flex items-center space-x-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-semibold border transition-all active:scale-[0.97] ${
                 isChatOpen
                   ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(0,229,255,0.2)]'
                   : 'bg-white/[0.04] text-white/70 hover:text-white border-white/10 hover:border-white/20'
@@ -153,21 +156,36 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Export & Reset buttons when data exists */}
             {hasData && (
               <>
+                {/* PDF Print Export Button */}
+                <button
+                  id="header-print-pdf-button"
+                  type="button"
+                  onClick={onPrintPdf}
+                  title="Exportar Reporte Ejecutivo a PDF"
+                  className="flex items-center space-x-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)] transition-all cursor-pointer active:scale-[0.97]"
+                >
+                  <Printer className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden md:inline">Reporte PDF</span>
+                </button>
+
+                {/* Markdown Export Button */}
                 <button
                   id="header-export-button"
                   type="button"
                   onClick={onExport}
-                  title="Export Analysis Report"
-                  className="p-2 rounded-xl text-white/60 hover:text-cyan-400 hover:bg-white/[0.05] border border-white/10 transition-colors"
+                  title="Descargar Reporte Markdown"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-white/60 hover:text-cyan-400 hover:bg-white/[0.05] border border-white/10 transition-colors active:scale-[0.97]"
                 >
                   <FileDown className="w-4 h-4" />
                 </button>
+
+                {/* Reset Button */}
                 <button
                   id="header-reset-button"
                   type="button"
                   onClick={onReset}
-                  title="Load New Batch"
-                  className="p-2 rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 border border-white/10 transition-colors"
+                  title="Cargar Nuevo Lote"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 border border-white/10 transition-colors active:scale-[0.97]"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>

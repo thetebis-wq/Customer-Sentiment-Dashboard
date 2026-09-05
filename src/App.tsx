@@ -26,6 +26,7 @@ import {
   ActionableArea,
   WordCloudItem,
   GeminiModelChoice,
+  AnalysisMode,
 } from './types';
 
 export default function App() {
@@ -40,11 +41,12 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
-  // Analyze function
+  // Analyze function supporting dual mode
   const runAnalysis = async (
     rawText: string,
     model: GeminiModelChoice = modelChoice,
-    thinking: boolean = enableThinking
+    thinking: boolean = enableThinking,
+    mode: AnalysisMode = 'competitor_teardown'
   ) => {
     setIsAnalyzing(true);
     setErrorMessage(null);
@@ -56,6 +58,7 @@ export default function App() {
           rawReviews: rawText,
           modelChoice: model,
           enableThinking: thinking,
+          analysisMode: mode,
         }),
       });
 
@@ -75,10 +78,14 @@ export default function App() {
     }
   };
 
-  // Initial load: Auto-run first sample so user sees a vibrant dashboard instantly!
+  // Initial load: Auto-run first sample with competitor teardown mode
   useEffect(() => {
-    runAnalysis(SAMPLE_DATASETS[0].rawText, 'gemini-3.5-flash', false);
+    runAnalysis(SAMPLE_DATASETS[0].rawText, 'gemini-3.5-flash', false, 'competitor_teardown');
   }, []);
+
+  const handlePrintPdf = () => {
+    window.print();
+  };
 
   const handleSelectModel = (model: GeminiModelChoice) => {
     setModelChoice(model);
@@ -176,6 +183,7 @@ ${analysisResult.wordCloud
         onToggleChat={() => setIsChatOpen(!isChatOpen)}
         isChatOpen={isChatOpen}
         onExport={handleExport}
+        onPrintPdf={handlePrintPdf}
         onReset={handleReset}
         hasData={Boolean(analysisResult)}
         modelChoice={modelChoice}

@@ -1,13 +1,12 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import dotenv from 'dotenv';
+import { generateHeuristicAnalysis } from './src/server/heuristicGenerator';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentDirname = process.cwd();
 
 const app = express();
 const PORT = 3000;
@@ -136,7 +135,7 @@ async function callGeminiWithResilience(params: {
 // Primary Sentiment Analysis Endpoint
 app.post('/api/analyze-sentiment', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { rawReviews, modelChoice, enableThinking } = req.body;
+    const { rawReviews, modelChoice, enableThinking, analysisMode = 'self_audit' } = req.body;
 
     if (!rawReviews || typeof rawReviews !== 'string' || rawReviews.trim().length === 0) {
       res.status(400).json({ error: 'rawReviews string is required' });
@@ -153,11 +152,30 @@ app.post('/api/analyze-sentiment', async (req: Request, res: Response): Promise<
       targetModel = 'gemini-3.8-flash';
     }
 
-    // Prompt definition with explicit schema
-    const prompt = `You are a Principal Customer Intelligence Data Scientist and Executive CX Strategist.
-Analyze the following batch of raw customer reviews thoroughly.
+    const isCompetitorMode = analysisMode === 'competitor_teardown';
 
-RAW CUSTOMER REVIEWS:
+    // Persona and requirements tailored to mode
+    const systemRole = isCompetitorMode
+      ? 'You are a Senior Competitor Intelligence Director, Growth Strategist, and Market Teardown Expert.'
+      : 'You are a Principal Customer Intelligence Data Scientist and Executive CX Strategist.';
+
+    const modeInstructions = isCompetitorMode
+      ? `STRATEGIC FOCUS: COMPETITOR PMF TEARDOWN & CUSTOMER ACQUISITION OFFENSE
+Your goal is to conduct an aggressive competitor autopsy to discover how to steal their customers and build a superior alternative.
+In addition to standard metrics:
+1. Identify "The Wedge" (the single biggest commercial positioning angle to beat them).
+2. Identify 3-5 "Switching Triggers" (exact moments of frustration that make customers cancel or seek alternatives).
+3. Identify 3-5 "Minimum Table Stakes" (features customers love that any competitor MUST match).
+4. Extract 3-5 "Ad Hooks" (compelling copy headlines based on real complaints that can be used in marketing campaigns targeting this competitor).
+5. Top Actionable Areas must represent the top 3 competitor vulnerabilities to exploit in product positioning.`
+      : `STRATEGIC FOCUS: INTERNAL PRODUCT AUDIT & ROADMAP REMEDIATION
+Your goal is to diagnose customer sentiment posture, pinpoint internal friction vectors, and prioritize top 3 actionable areas for product and operational improvement.`;
+
+    // Prompt definition with explicit schema
+    const prompt = `${systemRole}
+${modeInstructions}
+
+RAW CUSTOMER REVIEWS BATCH:
 """
 ${rawReviews.slice(0, 45000)}
 """
@@ -171,7 +189,8 @@ REQUIREMENTS:
    - Comprehensive analytical narrative diagnosing customer sentiment posture.
    - Key operational strengths.
    - Urgent risks.
-   - EXACTLY 3 top actionable areas for improvement. Each actionable area MUST include: title, impact ('Critical'|'High'|'Medium'), category (e.g., 'API Stability & Reliability', 'Billing Transparency', 'Customer Support Responsiveness', 'Mobile App UX', 'Fulfillment & Logistics'), a clear problem statement, direct supporting evidence quotes from the reviews, concrete recommended action plan, and projected business/sentiment impact.
+   ${isCompetitorMode ? `- "competitorInsights" object containing "theWedge", "switchingTriggers" (string[]), "minimumTableStakes" (string[]), "adHooks" (string[]).` : ''}
+   - EXACTLY 3 top actionable areas. Each actionable area MUST include: title, impact ('Critical'|'High'|'Medium'), category (e.g., 'API Stability & Reliability', 'Billing Transparency', 'Customer Support Responsiveness', 'Mobile App UX', 'Fulfillment & Logistics'), a clear problem statement, direct supporting evidence quotes from the reviews, concrete recommended action plan, and projected business/sentiment impact.
 5. Overall dashboard metrics: total reviews, positive/neutral/negative percentages, average sentiment score, estimated NPS score (-100 to +100), average rating, top praise and complaint categories.
 
 Respond ONLY with valid JSON matching this schema:
@@ -210,10 +229,17 @@ Respond ONLY with valid JSON matching this schema:
     }
   ],
   "executiveSummary": {
+    "analysisMode": "${analysisMode}",
     "headline": string,
     "overallNarrative": string,
     "keyStrengths": string[],
     "urgentRisks": string[],
+    ${isCompetitorMode ? `"competitorInsights": {
+      "theWedge": string,
+      "switchingTriggers": string[],
+      "minimumTableStakes": string[],
+      "adHooks": string[]
+    },` : ''}
     "topActionableAreas": [
       {
         "id": string,
@@ -248,13 +274,13 @@ Respond ONLY with valid JSON matching this schema:
         preferredModel: targetModel,
         contents: prompt,
         systemInstruction:
-          'You are an expert Voice-of-Customer analyst. Output strict, valid JSON with exact requested properties without markdown fences.',
+          'You are an expert Voice-of-Customer analyst and competitive strategist. Output strict, valid JSON with exact requested properties without markdown fences.',
         responseMimeType: 'application/json',
         enableThinking,
       });
     } catch (apiErr: any) {
       console.warn('[Sentiment Analysis] Serving fallback analysis due to API limit/unavailability:', apiErr?.message);
-      const fallback = generateHeuristicAnalysis(rawReviews);
+      const fallback = generateHeuristicAnalysis(rawReviews, analysisMode);
       res.json({
         ...fallback,
         modelUsed: 'heuristic-engine',
@@ -270,7 +296,12 @@ Respond ONLY with valid JSON matching this schema:
       parsedData = JSON.parse(cleaned);
     } catch (parseErr) {
       console.warn('JSON parsing error on model output, falling back to heuristic:', parseErr);
-      parsedData = generateHeuristicAnalysis(rawReviews);
+      parsedData = generateHeuristicAnalysis(rawReviews, analysisMode);
+    }
+
+    // Ensure analysisMode is stamped
+    if (parsedData?.executiveSummary) {
+      parsedData.executiveSummary.analysisMode = analysisMode;
     }
 
     // Ensure the top actionable areas is exactly 3 items if possible
@@ -288,7 +319,7 @@ Respond ONLY with valid JSON matching this schema:
     });
   } catch (err: any) {
     console.warn('Sentiment analysis handled error:', err?.message || err);
-    const fallback = generateHeuristicAnalysis(req.body.rawReviews || '');
+    const fallback = generateHeuristicAnalysis(req.body.rawReviews || '', req.body.analysisMode || 'self_audit');
     res.json({
       ...fallback,
       modelUsed: 'heuristic-engine',
@@ -361,240 +392,6 @@ Guidelines:
     });
   }
 });
-
-// Heuristic fallback generator when offline or parsing fails
-function generateHeuristicAnalysis(rawText: string) {
-  const lines = rawText
-    .split(/\n+/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 5);
-
-  const reviews = lines.slice(0, 40).map((line, idx) => {
-    const isNeg =
-      /downtime|bad|terrible|broken|worst|bug|slow|crash|poor|refund|cost|fail|expensive|hate|disaster/i.test(line);
-    const isPos =
-      /great|love|excellent|fast|seamless|brilliant|helpful|best|awesome|fantastic|pleased|5\/5|5 stars/i.test(line);
-    const sentiment: 'positive' | 'neutral' | 'negative' = isNeg
-      ? 'negative'
-      : isPos
-      ? 'positive'
-      : 'neutral';
-    const score = sentiment === 'positive' ? 0.82 : sentiment === 'negative' ? -0.74 : 0.05;
-    const rating = sentiment === 'positive' ? 5 : sentiment === 'negative' ? 2 : 3;
-
-    return {
-      id: `rev-${idx + 1}`,
-      text: line,
-      date: `2024-0${Math.min(9, Math.floor(idx / 3) + 1)}-${10 + (idx % 18)}`,
-      rating,
-      sentiment,
-      sentimentScore: score,
-      complaints: isNeg ? ['Operational friction reported in text'] : [],
-      praises: isPos ? ['Positive feedback highlighted'] : [],
-      keyThemes: ['Product Experience', 'Service Quality'],
-    };
-  });
-
-  const posCount = reviews.filter((r) => r.sentiment === 'positive').length;
-  const negCount = reviews.filter((r) => r.sentiment === 'negative').length;
-  const neuCount = reviews.filter((r) => r.sentiment === 'neutral').length;
-  const total = Math.max(1, reviews.length);
-
-  return {
-    id: 'analysis-' + Date.now(),
-    timestamp: Date.now(),
-    metrics: {
-      totalReviews: total,
-      positivePercentage: Math.round((posCount / total) * 100),
-      neutralPercentage: Math.round((neuCount / total) * 100),
-      negativePercentage: Math.round((negCount / total) * 100),
-      averageSentimentScore: Number(((posCount * 0.8 - negCount * 0.7) / total).toFixed(2)),
-      estimatedNps: Math.round(((posCount - negCount) / total) * 100),
-      averageRating: Number(
-        (reviews.reduce((acc, r) => acc + (r.rating || 3), 0) / total).toFixed(1)
-      ),
-      topPraiseCategory: 'Onboarding & Core Usability',
-      topComplaintCategory: 'Stability & Support Response Time',
-    },
-    trendData: [
-      {
-        period: 'Month 1',
-        averageSentiment: 0.65,
-        positiveCount: 4,
-        neutralCount: 1,
-        negativeCount: 1,
-        totalReviews: 6,
-        notableDrivers: 'Strong launch onboarding praise',
-      },
-      {
-        period: 'Month 2',
-        averageSentiment: -0.2,
-        positiveCount: 1,
-        neutralCount: 1,
-        negativeCount: 3,
-        totalReviews: 5,
-        notableDrivers: 'Intermittent rate-limiting and billing ticket delays',
-      },
-      {
-        period: 'Month 3',
-        averageSentiment: 0.45,
-        positiveCount: 3,
-        neutralCount: 2,
-        negativeCount: 1,
-        totalReviews: 6,
-        notableDrivers: 'Analytics update rollout and stabilized support queue',
-      },
-      {
-        period: 'Month 4',
-        averageSentiment: 0.72,
-        positiveCount: 5,
-        neutralCount: 1,
-        negativeCount: 0,
-        totalReviews: 6,
-        notableDrivers: 'Mobile optimization and customer success turnaround',
-      },
-    ],
-    wordCloud: [
-      {
-        text: 'Lightning fast UI',
-        type: 'praise',
-        weight: 88,
-        sentimentScore: 0.9,
-        count: 7,
-        category: 'Performance',
-        associatedQuotes: ['UI is lightning fast and integrations with Slack are seamless.'],
-      },
-      {
-        text: 'API Rate Limiting',
-        type: 'complaint',
-        weight: 82,
-        sentimentScore: -0.85,
-        count: 5,
-        category: 'Infrastructure',
-        associatedQuotes: ['Hit severe API rate limiting during quarterly launch with zero alert.'],
-      },
-      {
-        text: 'Seamless Slack integration',
-        type: 'praise',
-        weight: 76,
-        sentimentScore: 0.85,
-        count: 6,
-        category: 'Integrations',
-        associatedQuotes: ['Integrations with Slack are seamless.'],
-      },
-      {
-        text: 'Billing Seat Charges',
-        type: 'complaint',
-        weight: 79,
-        sentimentScore: -0.9,
-        count: 4,
-        category: 'Billing',
-        associatedQuotes: ['Charged for 50 inactive seats despite removing them 2 weeks before cycle.'],
-      },
-      {
-        text: 'Support chat under 3 min',
-        type: 'praise',
-        weight: 70,
-        sentimentScore: 0.88,
-        count: 5,
-        category: 'Customer Support',
-        associatedQuotes: ['Customer support turnaround has dramatically improved via chat in under 3 mins.'],
-      },
-      {
-        text: 'Mobile Responsiveness',
-        type: 'complaint',
-        weight: 68,
-        sentimentScore: -0.65,
-        count: 4,
-        category: 'Mobile UX',
-        associatedQuotes: ['Mobile responsiveness is virtually nonexistent.'],
-      },
-      {
-        text: 'Automated weekly digests',
-        type: 'praise',
-        weight: 65,
-        sentimentScore: 0.8,
-        count: 4,
-        category: 'Features',
-        associatedQuotes: ['Love the AI summary generator and automated weekly digests.'],
-      },
-      {
-        text: '502 Bad Gateway Errors',
-        type: 'complaint',
-        weight: 62,
-        sentimentScore: -0.8,
-        count: 3,
-        category: 'Reliability',
-        associatedQuotes: ['Frequent intermittent 502 bad gateway errors on Monday mornings.'],
-      },
-    ],
-    executiveSummary: {
-      headline: 'Strong Core Product Affinity Dampened by Infrastructure & Billing Pain Points',
-      overallNarrative:
-        'Customer satisfaction displays a bifurcated pattern: users genuinely praise the rapid onboarding and dashboard analytics, but encounter critical friction around unannounced API rate limits, billing reconciliation delays, and mobile UI limitations.',
-      keyStrengths: [
-        'Rapid time-to-value with responsive initial onboarding support.',
-        'High praise for core analytics visualization and automated executive digests.',
-        'Reliable Slack and developer SDK ecosystem.',
-      ],
-      urgentRisks: [
-        'Unexpected API downtime and unnotified rate throttles impacting client revenue.',
-        'Billing disputes regarding inactive seat renewals causing enterprise account dissatisfaction.',
-        'Support ticket backlogs extending beyond 48 hours for critical infrastructure issues.',
-      ],
-      topActionableAreas: [
-        {
-          id: 'action-1',
-          title: 'Automated Rate-Limit Threshold Alerts & Grace Buffers',
-          impact: 'Critical',
-          category: 'Infrastructure & Developer Experience',
-          problemStatement:
-            'Enterprise engineering teams experience unexpected API rate throttles during peak business hours with zero advance warning or soft-cap alerts, leading to customer revenue losses.',
-          supportingEvidence: [
-            'We hit severe API rate limiting during our quarterly launch with zero alert notification. Downtime cost us $15k.',
-            'Frequent intermittent 502 bad gateway errors on Monday mornings.',
-          ],
-          recommendedAction:
-            'Implement webhook alerts at 80% and 95% quota utilization, introduce a 15-minute emergency soft-burst buffer, and provide a real-time status banner in the dev portal.',
-          projectedImpact:
-            'Estimated 65% reduction in high-severity API support tickets and immediate mitigation of churn risk among top enterprise tiers.',
-        },
-        {
-          id: 'action-2',
-          title: 'Self-Service Billing Reconciliation & Proration Transparency',
-          impact: 'High',
-          category: 'Billing & Account Administration',
-          problemStatement:
-            'Customers removing inactive seats before renewal dates still find themselves billed for unassigned licenses, requiring multi-step escalation for refunds.',
-          supportingEvidence: [
-            'Charged for 50 inactive seats despite removing them 2 weeks before billing cycle renewal. Getting a refund took 3 escalated phone calls.',
-          ],
-          recommendedAction:
-            'Introduce immediate pro-rated credit adjustments directly within the admin seat manager and send an automated billing preview email 5 days prior to invoice generation.',
-          projectedImpact:
-            'Eliminates the #1 driver of negative reviews in administrative workflows and saves ~20 hours per week in billing support escalations.',
-        },
-        {
-          id: 'action-3',
-          title: 'Mobile Review & Approval Experience Overhaul',
-          impact: 'Medium',
-          category: 'Mobile & Web Usability',
-          problemStatement:
-            'Executive and traveling managers struggle to complete basic approval workflows on mobile web, encountering non-responsive layouts and slow search queries.',
-          supportingEvidence: [
-            'Mobile responsiveness is virtually nonexistent. Impossible to approve workflows while traveling on iPhone.',
-            'Search function inside document repository is painfully slow.',
-          ],
-          recommendedAction:
-            'Deploy a streamlined mobile-first approval view with large touch targets, simplified one-tap approval actions, and optimized index search.',
-          projectedImpact:
-            'Increases weekly active mobile engagement by an estimated 25% and resolves customer frustration during travel.',
-        },
-      ],
-    },
-    reviews,
-  };
-}
 
 // Development Vite middleware vs Production static serving
 async function startServer() {

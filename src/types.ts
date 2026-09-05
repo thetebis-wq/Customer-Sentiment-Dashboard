@@ -24,12 +24,23 @@ export interface ActionableArea {
   projectedImpact: string;
 }
 
+export type AnalysisMode = 'self_audit' | 'competitor_teardown';
+
+export interface CompetitorInsights {
+  theWedge: string; // The primary commercial positioning wedge to beat this competitor
+  switchingTriggers: string[]; // Urgent reasons customers are canceling or defecting
+  minimumTableStakes: string[]; // Beloved features that any competing product must match
+  adHooks: string[]; // Customer verbatim phrasing ready for high-converting ads
+}
+
 export interface ExecutiveSummary {
   headline: string;
   overallNarrative: string;
   keyStrengths: string[];
   urgentRisks: string[];
   topActionableAreas: ActionableArea[]; // Top 3 actionable areas
+  analysisMode?: AnalysisMode;
+  competitorInsights?: CompetitorInsights;
 }
 
 export interface SentimentTrendPoint {
